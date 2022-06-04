@@ -252,36 +252,23 @@ mod test {
     #[test]
     fn test_sm3_standards() {
         let mut cs = TestConstraintSystem::<Bls12>::new();
-        let input = vec![
-            Boolean::constant(false),
-            Boolean::constant(true),
-            Boolean::constant(true),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(true),
-            Boolean::constant(false),
-            Boolean::constant(true),
-            Boolean::constant(true),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(true),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(true),
-            Boolean::constant(true),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(false),
-            Boolean::constant(true),
-            Boolean::constant(true),
-        ];
-        let out_bits = sm3(&mut cs, &input).unwrap();
+        let data = "abc".as_bytes();
+        let mut input_bits = vec![];
+
+        for (byte_i, input_byte) in data.into_iter().enumerate() {
+            for bit_i in (0..8).rev() {
+                let cs = cs.namespace(|| format!("input bit {} {}", byte_i, bit_i));
+
+                input_bits.push(
+                    AllocatedBit::alloc(cs, Some((input_byte >> bit_i) & 1u8 == 1u8))
+                        .unwrap()
+                        .into(),
+                );
+            }
+        }
+        let out_bits = sm3(&mut cs, &input_bits).unwrap();
 
         assert!(cs.is_satisfied());
-        assert_eq!(cs.num_constraints(), 0);
 
         let expected =
             hex::decode("66C7F0F462EEEDD9D1F2D46BDC10E4E24167C4875CF2F7A2297DA02B8F4BA8E0")
